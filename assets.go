@@ -72,3 +72,14 @@ func getVideoAspectRatio(filePath string) (string, error) {
 
 	return res.Streams[0].DisplayAspectRatio, nil
 }
+
+func processVideoForFastStart(filePath string) (string, error) {
+	outputPath := filePath + ".processing"
+	cmdStr := fmt.Sprintf("ffmpeg -i %s -c copy -movflags faststart -f mp4 %s", filePath, outputPath)
+	cmd := exec.Command("sh", "-c", cmdStr)
+	err := cmd.Run()
+	if err != nil {
+		return "", err
+	}
+	return outputPath, nil
+}
