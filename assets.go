@@ -1,10 +1,14 @@
 package main
 
 import (
+	"bytes"
 	"crypto/rand"
 	"encoding/base64"
+	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 )
@@ -40,4 +44,31 @@ func getExtensnsion(mediaType string) string {
 		return ".bin"
 	}
 	return "." + parts[1]
+}
+
+type VideoAspectRatio struct {
+	Streams []struct {
+		DisplayAspectRatio string `json:"display_aspect_ratio"`
+	} `json:"streams"`
+}
+
+func getVideoAspectRatio(filePath string) (string, error) {
+	cmdStr := fmt.Sprintf("ffprobe -v error -print_format json -show_streams %s", filePath)
+	cmd := exec.Command("sh", "-c", cmdStr)
+	var buffer bytes.Buffer
+	cmd.Stdout = &buffer
+	if err := cmd.Run(); err != nil {
+		return "", err
+	}
+
+	var res VideoAspectRatio
+	if err := json.Unmarshal(buffer.Bytes(), &res); err != nil {
+		return "", err
+	}
+
+	if len(res.Streams) == 0 {
+		return "", errors.New("no streams found")
+	}
+
+	return res.Streams[0].DisplayAspectRatio, nil
 }
